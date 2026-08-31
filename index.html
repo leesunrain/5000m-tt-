@@ -98,16 +98,53 @@
     <div class="table-wrap"><table id="previewTable"></table></div>
   </div>
   <div class="panel">
-    <h2>사진/이미지 입력</h2>
-    <p class="hint">결과표 이미지를 AI가 읽고 이름·조·기록을 자동 매칭하는 기능은 Supabase 연동 버전에서 추가합니다. 자동 저장 전 반드시 검토 화면을 거치게 설계합니다.</p>
-    <button disabled title="2차 버전에서 지원">이미지 자동 인식 — 2차 버전</button>
+    <div class="panel-head">
+      <div>
+        <h2>사진/이미지 입력</h2>
+        <p class="hint">결과표 이미지를 선택하면 박스 안에 미리보기로 불러옵니다. 글자 인식 후 반드시 기록을 검토하세요.</p>
+      </div>
+    </div>
+
+    <label class="image-drop" id="imageDrop">
+      <input id="resultImage" type="file" accept="image/*" hidden>
+      <div id="imageEmpty">
+        <div class="image-icon">🖼️</div>
+        <strong>결과표 사진 불러오기</strong>
+        <span>갤러리 또는 파일에서 이미지 선택</span>
+      </div>
+      <img id="imagePreview" alt="선택한 결과표 미리보기" hidden>
+    </label>
+
+    <div id="imageInfo" class="image-info" hidden></div>
+
+    <div class="toolbar image-actions">
+      <button id="chooseImage" type="button">사진 선택</button>
+      <button id="runOcr" type="button" class="secondary" disabled>이미지 글자 읽기</button>
+      <button id="removeImage" type="button" class="secondary" disabled>사진 지우기</button>
+    </div>
+
+    <div class="ocr-progress" id="ocrProgress" hidden>
+      <div class="ocr-bar"><span id="ocrBar"></span></div>
+      <div id="ocrStatus">준비 중...</div>
+    </div>
+
+    <label id="ocrTextWrap" hidden>이미지에서 읽은 내용
+      <textarea id="ocrText" rows="10" placeholder="이미지에서 읽은 글자가 여기에 표시됩니다."></textarea>
+    </label>
+
+    <div class="toolbar" id="ocrActions" hidden>
+      <button id="ocrToPaste" type="button">기록 입력칸으로 가져오기</button>
+    </div>
+
+    <p class="hint image-note">※ 사진 글자 인식은 기기와 이미지 품질에 따라 오차가 있을 수 있습니다. 자동 저장하지 않고 미리보기·수정 후 저장하도록 되어 있습니다.</p>
   </div>
 </section>
 </main>
 
-<footer>공용 기록은 Supabase에서 불러옵니다. 서버 연결 실패 시 마지막 저장 기록을 표시합니다.</footer>
+<footer>공용 기록은 Supabase에서 불러옵니다. 이미지 원본은 현재 기기에만 미리보기로 표시되며 자동 저장되지 않습니다.</footer>
 
 <script src="data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

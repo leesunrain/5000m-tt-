@@ -115,12 +115,124 @@ async function loadFromSupabase(){
    return false;
  }catch(err){console.warn("Supabase load failed; using local data.",err);return false;}
 }
+
+let selectedImageFile=null;
+let selectedImageUrl=null;
+
+function humanSize(bytes){
+ if(bytes<1024)return `${bytes} B`;
+ if(bytes<1024*1024)return `${(bytes/1024).toFixed(1)} KB`;
+ return `${(bytes/1024/1024).toFixed(1)} MB`;
+}
+
+function resetImageInput(){
+ selectedImageFile=null;
+ if(selectedImageUrl){URL.revokeObjectURL(selectedImageUrl);selectedImageUrl=null;}
+ $("#resultImage").value="";
+ $("#imagePreview").hidden=true;
+ $("#imagePreview").removeAttribute("src");
+ $("#imageEmpty").hidden=false;
+ $("#imageInfo").hidden=true;
+ $("#imageInfo").textContent="";
+ $("#runOcr").disabled=true;
+ $("#removeImage").disabled=true;
+ $("#ocrProgress").hidden=true;
+ $("#ocrTextWrap").hidden=true;
+ $("#ocrActions").hidden=true;
+ $("#ocrText").value="";
+ $("#ocrBar").style.width="0%";
+ $("#ocrStatus").textContent="준비 중...";
+}
+
+function showSelectedImage(file){
+ if(!file || !file.type.startsWith("image/")){
+   $("#importMsg").textContent="이미지 파일을 선택해 주세요.";
+   return;
+ }
+ selectedImageFile=file;
+ if(selectedImageUrl) URL.revokeObjectURL(selectedImageUrl);
+ selectedImageUrl=URL.createObjectURL(file);
+ $("#imagePreview").src=selectedImageUrl;
+ $("#imagePreview").hidden=false;
+ $("#imageEmpty").hidden=true;
+ $("#imageInfo").hidden=false;
+ $("#imageInfo").textContent=`${file.name} · ${humanSize(file.size)}`;
+ $("#runOcr").disabled=false;
+ $("#removeImage").disabled=false;
+ $("#ocrTextWrap").hidden=true;
+ $("#ocrActions").hidden=true;
+}
+
+function cleanupOcrText(text){
+ return (text||"")
+   .replace(/[|¦]/g," ")
+   .replace(/[ \t]+/g," ")
+   .replace(/\n{3,}/g,"\n\n")
+   .trim();
+}
+
+async function runImageOcr(){
+ if(!selectedImageFile)return;
+ if(!window.Tesseract){
+   $("#ocrProgress").hidden=false;
+   $("#ocrStatus").textContent="글자 인식 모듈을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.";
+   return;
+ }
+ $("#runOcr").disabled=true;
+ $("#ocrProgress").hidden=false;
+ $("#ocrTextWrap").hidden=true;
+ $("#ocrActions").hidden=true;
+ $("#ocrBar").style.width="2%";
+ $("#ocrStatus").textContent="이미지 분석 준비 중...";
+ try{
+   const result=await Tesseract.recognize(selectedImageFile,"kor+eng",{
+     logger:m=>{
+       if(m.status==="recognizing text"){
+         const pct=Math.max(2,Math.min(100,Math.round((m.progress||0)*100)));
+         $("#ocrBar").style.width=pct+"%";
+         $("#ocrStatus").textContent=`글자 읽는 중... ${pct}%`;
+       }else if(m.status){
+         $("#ocrStatus").textContent=m.status;
+       }
+     }
+   });
+   const text=cleanupOcrText(result?.data?.text||"");
+   $("#ocrText").value=text;
+   $("#ocrTextWrap").hidden=false;
+   $("#ocrActions").hidden=false;
+   $("#ocrBar").style.width="100%";
+   $("#ocrStatus").textContent=text ? "글자 읽기 완료 — 내용을 확인하고 수정해 주세요." : "글자를 읽지 못했습니다. 더 선명한 이미지를 사용해 주세요.";
+ }catch(err){
+   console.error(err);
+   $("#ocrStatus").textContent="이미지 글자 읽기에 실패했습니다. CSV/붙여넣기 방식도 사용할 수 있습니다.";
+ }finally{
+   $("#runOcr").disabled=false;
+ }
+}
+
+function ocrTextToPaste(){
+ const raw=$("#ocrText").value.trim();
+ if(!raw)return;
+ $("#pasteArea").value=raw;
+ $("#previewImport").scrollIntoView({behavior:"smooth",block:"center"});
+ $("#importMsg").textContent="이미지에서 읽은 내용을 입력칸으로 가져왔습니다. 형식을 확인한 뒤 미리보기를 눌러 주세요.";
+}
+
 function refreshAll(){renderDashboard();renderMonthly();renderAthleteSelect();drawAthlete()}
 $("#dashMonth").addEventListener("change",e=>renderDashTable(e.target.value));
 $("#monthSelect").addEventListener("change",renderMonthlyTable);$("#searchMonthly").addEventListener("input",renderMonthlyTable);$("#athleteSelect").addEventListener("change",drawAthlete);$("#exportCsv").addEventListener("click",exportCsv);
 $("#previewImport").addEventListener("click",()=>{previewRows=parseText($("#pasteArea").value);showPreview()});
 $("#saveImport").addEventListener("click",savePreview);$("#clearImport").addEventListener("click",()=>{previewRows=[];$("#pasteArea").value="";showPreview()});
 $("#csvFile").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;$("#pasteArea").value=await f.text();previewRows=parseText($("#pasteArea").value);showPreview()});
+$("#chooseImage").addEventListener("click",()=>$("#resultImage").click());
+$("#imageDrop").addEventListener("click",e=>{
+ if(e.target.id==="chooseImage")return;
+});
+$("#resultImage").addEventListener("change",e=>showSelectedImage(e.target.files?.[0]));
+$("#removeImage").addEventListener("click",resetImageInput);
+$("#runOcr").addEventListener("click",runImageOcr);
+$("#ocrToPaste").addEventListener("click",ocrTextToPaste);
+
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("#installBtn").hidden=false});
 $("#installBtn").addEventListener("click",async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("#installBtn").hidden=true});
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
