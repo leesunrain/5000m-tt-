@@ -20,3 +20,10 @@ label{font-size:13px;color:#475569;display:grid;gap:5px}.grid2{display:grid;grid
 .athlete-hero{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.mini{background:#f8fafc;border-radius:10px;padding:10px}.mini span{display:block;font-size:11px;color:var(--muted)}.mini b{font-size:18px}
 footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
 @media(max-width:720px){.cards,.athlete-hero{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.tabs button{font-size:12px;padding:12px 3px}.rankline{grid-template-columns:40px 1fr 76px 76px}main{padding:10px}th,td{padding:9px 6px;font-size:13px}}
+.pbline{background:linear-gradient(90deg,#fff7ed,#ffffff);border-radius:10px;margin:4px 0;padding-left:8px;padding-right:8px}
+.pbline .pb{font-weight:900}
+@media(max-width:720px){
+  .panel{padding:12px}
+  .card .value{font-size:21px}
+  .rankline{font-size:13px}
+}

@@ -11,8 +11,21 @@ function persist(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}
 function dates(){return Object.keys(data).sort()}
 function allNames(){return [...new Set(dates().flatMap(d=>data[d].map(r=>r.name)))].sort((a,b)=>a.localeCompare(b,"ko"))}
 function history(name){return dates().map(d=>({date:d,row:data[d].find(r=>r.name===name)})).filter(x=>x.row)}
-function isPB(name,date,time){const s=toSec(time);return history(name).filter(x=>x.date<=date).every(x=>toSec(x.row.time)>=s)}
+function isPB(name,date,time){
+ const s=toSec(time);
+ const prev=history(name).filter(x=>x.date<date);
+ if(!prev.length) return false;
+ return prev.every(x=>toSec(x.row.time)>s);
+}
 function diffPrev(name,date,time){const h=history(name).filter(x=>x.date<date);if(!h.length)return null;return toSec(time)-toSec(h[h.length-1].row.time)}
+function bestBefore(name,date){
+ const prev=history(name).filter(x=>x.date<date).map(x=>toSec(x.row.time)).filter(Number.isFinite);
+ return prev.length?Math.min(...prev):null;
+}
+function pbGain(name,date,time){
+ const b=bestBefore(name,date), s=toSec(time);
+ return b!=null && s<b ? b-s : null;
+}
 function displayDate(d){const [y,m,day]=d.split("-");return `${y}.${m}.${day}`}
 function fillSelect(sel, opts, value){sel.innerHTML=opts.map(o=>`<option value="${o}">${displayDate(o)||o}</option>`).join("");if(value)sel.value=value}
 function initTabs(){$$(".tabs button").forEach(b=>b.addEventListener("click",()=>{$$(".tabs button").forEach(x=>x.classList.remove("active"));$$(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");$("#"+b.dataset.tab).classList.add("active");if(b.dataset.tab==="athletes")drawAthlete();}))}
@@ -22,16 +35,18 @@ function renderDashboard(){
  const common=rows.map(r=>({r,d:diffPrev(r.name,latest,r.time)})).filter(x=>x.d!=null);
  const improved=common.filter(x=>x.d<0).length;
  $("#summaryCards").innerHTML=[
- ["최근 측정",displayDate(latest)],["참가자",rows.length+"명"],["PB",pbs+"명"],["전월 향상",improved+"명"]
+ ["최근 측정",displayDate(latest)],["참가자",rows.length+"명"],["PB 갱신",pbs+"명"],["전월 향상",improved+"명"]
  ].map(([a,b])=>`<div class="card"><div class="label">${a}</div><div class="value">${b}</div></div>`).join("");
  const top=common.filter(x=>x.d<0).sort((a,b)=>a.d-b.d).slice(0,8);
  $("#improvementList").innerHTML=top.map((x,i)=>`<div class="rankline"><span>${i+1}</span><strong>${x.r.name}</strong><span>${x.r.time}</span><span class="good">▲ ${Math.abs(x.d)}초</span></div>`).join("")||'<p class="hint">비교 가능한 기록이 없습니다.</p>';
+ const pbRows=rows.map(r=>({r,g:pbGain(r.name,latest,r.time)})).filter(x=>x.g!=null).sort((a,b)=>b.g-a.g);
+ $("#pbRenewList").innerHTML=pbRows.map((x,i)=>`<div class="rankline pbline"><span>⭐</span><strong>${x.r.name}</strong><span>${x.r.time}</span><span class="pb">PB -${x.g}초</span></div>`).join("")||'<p class="hint">이번 달 PB 갱신자가 없습니다.</p>';
  fillSelect($("#dashMonth"),ds,latest); renderDashTable(latest);
 }
 function renderDashTable(date){
  const rows=(data[date]||[]).slice().sort((a,b)=>toSec(a.time)-toSec(b.time));
  $("#dashTable").innerHTML=`<thead><tr><th>순위</th><th>이름</th><th>조</th><th>5000m</th><th>km 페이스</th><th>400m</th><th>VDOT</th><th>전월대비</th></tr></thead><tbody>`+
- rows.map((r,i)=>{const d=diffPrev(r.name,date,r.time);const pb=isPB(r.name,date,r.time);return `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.group||"-"}</td><td class="${pb?"pb":""}">${r.time}${pb?" ★":""}</td><td>${pace5k(r.time)}</td><td>${lap400(r.time)}</td><td>${r.vdot??"-"}</td><td class="${d<0?"good":d>0?"bad":""}">${d==null?"-":d<0?`▲ ${Math.abs(d)}초`:`▼ ${d}초`}</td></tr>`}).join("")+"</tbody>";
+ rows.map((r,i)=>{const d=diffPrev(r.name,date,r.time);const pb=isPB(r.name,date,r.time);return `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.group||"-"}</td><td class="${pb?"pb":""}">${r.time}${pb?" ⭐ PB":""}</td><td>${pace5k(r.time)}</td><td>${lap400(r.time)}</td><td>${r.vdot??"-"}</td><td class="${d<0?"good":d>0?"bad":""}">${d==null?"-":d<0?`▲ ${Math.abs(d)}초`:`▼ ${d}초`}</td></tr>`}).join("")+"</tbody>";
 }
 function renderMonthly(){
  const ds=dates(), latest=ds[ds.length-1]; fillSelect($("#monthSelect"),ds,$("#monthSelect").value||latest); renderMonthlyTable();
@@ -40,14 +55,14 @@ function renderMonthlyTable(){
  const date=$("#monthSelect").value, q=$("#searchMonthly").value.trim();
  const rows=(data[date]||[]).filter(r=>!q||r.name.includes(q)).slice().sort((a,b)=>toSec(a.time)-toSec(b.time));
  $("#monthlyTable").innerHTML=`<thead><tr><th>순위</th><th>이름</th><th>훈련조</th><th>기록</th><th>km</th><th>400m</th><th>VDOT</th><th>PB</th></tr></thead><tbody>`+
- rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.group||"-"}</td><td>${r.time}</td><td>${pace5k(r.time)}</td><td>${lap400(r.time)}</td><td>${r.vdot??"-"}</td><td>${isPB(r.name,date,r.time)?"★":"-"}</td></tr>`).join("")+"</tbody>";
+ rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.group||"-"}</td><td>${r.time}</td><td>${pace5k(r.time)}</td><td>${lap400(r.time)}</td><td>${r.vdot??"-"}</td><td>${isPB(r.name,date,r.time)?"⭐ PB":"-"}</td></tr>`).join("")+"</tbody>";
 }
 function renderAthleteSelect(){const names=allNames();$("#athleteSelect").innerHTML=names.map(n=>`<option>${n}</option>`).join("");if(names.includes("박영윤"))$("#athleteSelect").value="박영윤"}
 function drawAthlete(){
  const name=$("#athleteSelect").value;if(!name)return;const h=history(name);const secs=h.map(x=>toSec(x.row.time));const best=Math.min(...secs),first=secs[0],last=secs[secs.length-1];
  $("#athleteSummary").innerHTML=`<div class="athlete-hero"><div class="mini"><span>PB</span><b>${fmt(best)}</b></div><div class="mini"><span>최근 기록</span><b>${fmt(last)}</b></div><div class="mini"><span>첫 기록 대비</span><b class="${last<=first?"good":"bad"}">${last<=first?"▲ "+(first-last):"▼ "+(last-first)}초</b></div><div class="mini"><span>최근 km 페이스</span><b>${fmt(last/5)}</b></div></div>`;
  $("#athleteTable").innerHTML=`<thead><tr><th>측정일</th><th>조</th><th>기록</th><th>km</th><th>400m</th><th>VDOT</th><th>전월대비</th></tr></thead><tbody>`+
- h.map(x=>{const d=diffPrev(name,x.date,x.row.time);return `<tr><td>${displayDate(x.date)}</td><td>${x.row.group||"-"}</td><td class="${toSec(x.row.time)===best?"pb":""}">${x.row.time}</td><td>${pace5k(x.row.time)}</td><td>${lap400(x.row.time)}</td><td>${x.row.vdot??"-"}</td><td class="${d<0?"good":d>0?"bad":""}">${d==null?"-":d<0?`▲ ${Math.abs(d)}초`:`▼ ${d}초`}</td></tr>`}).join("")+"</tbody>"; drawChart(h);
+ h.map(x=>{const d=diffPrev(name,x.date,x.row.time);return `<tr><td>${displayDate(x.date)}</td><td>${x.row.group||"-"}</td><td class="${isPB(name,x.date,x.row.time)?"pb":""}">${x.row.time}${isPB(name,x.date,x.row.time)?" ⭐ PB":""}</td><td>${pace5k(x.row.time)}</td><td>${lap400(x.row.time)}</td><td>${x.row.vdot??"-"}</td><td class="${d<0?"good":d>0?"bad":""}">${d==null?"-":d<0?`▲ ${Math.abs(d)}초`:`▼ ${d}초`}</td></tr>`}).join("")+"</tbody>"; drawChart(h);
 }
 function drawChart(h){
  const c=$("#trendChart"),ctx=c.getContext("2d"),W=c.width,H=c.height,pad=58;ctx.clearRect(0,0,W,H);ctx.font="24px system-ui";ctx.fillStyle="#64748b";
