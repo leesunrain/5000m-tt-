@@ -1,0 +1,9 @@
+{
+  "name": "NIRC 5000m TT 관리",
+  "short_name": "NIRC 5000TT",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#162033",
+  "icons": []
+}

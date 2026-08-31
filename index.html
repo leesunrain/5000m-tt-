@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+<title>NIRC 5000m TT 관리</title>
+</head>
+<body>
+<header>
+  <div>
+    <h1>NIRC 5000m TT 관리</h1>
+    <p>월례 5000m 타임트라이얼 기록 · PB · 향상도 · 개인 추이</p>
+  </div>
+  <button id="installBtn" class="secondary" hidden>앱 설치</button>
+</header>
+
+<nav class="tabs" aria-label="주요 메뉴">
+  <button data-tab="dashboard" class="active">대시보드</button>
+  <button data-tab="monthly">월별 기록</button>
+  <button data-tab="athletes">개인 분석</button>
+  <button data-tab="import">기록 가져오기</button>
+</nav>
+
+<main>
+<section id="dashboard" class="tab active">
+  <div class="cards" id="summaryCards"></div>
+  <div class="panel">
+    <div class="panel-head">
+      <h2>8월 향상도 TOP</h2>
+      <span class="hint">7월 대비 동일 선수</span>
+    </div>
+    <div id="improvementList"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head">
+      <h2>PB / 최근 기록</h2>
+      <select id="dashMonth"></select>
+    </div>
+    <div class="table-wrap"><table id="dashTable"></table></div>
+  </div>
+</section>
+
+<section id="monthly" class="tab">
+  <div class="panel">
+    <div class="toolbar">
+      <label>측정일 <select id="monthSelect"></select></label>
+      <input id="searchMonthly" type="search" placeholder="이름 검색">
+      <button id="exportCsv" class="secondary">CSV 내보내기</button>
+    </div>
+    <div class="table-wrap"><table id="monthlyTable"></table></div>
+  </div>
+</section>
+
+<section id="athletes" class="tab">
+  <div class="panel">
+    <div class="toolbar">
+      <label>선수 <select id="athleteSelect"></select></label>
+    </div>
+    <div id="athleteSummary"></div>
+    <div class="chart-panel">
+      <canvas id="trendChart" width="900" height="380" aria-label="개인 기록 변화 그래프"></canvas>
+    </div>
+    <div class="table-wrap"><table id="athleteTable"></table></div>
+  </div>
+</section>
+
+<section id="import" class="tab">
+  <div class="panel">
+    <h2>기록 가져오기</h2>
+    <p class="hint">현재 1차 버전은 CSV/붙여넣기 입력을 지원합니다. 이미지 자동 인식은 다음 버전에서 연결합니다.</p>
+    <div class="grid2">
+      <label>측정일
+        <input id="importDate" type="date" value="2026-09-02">
+      </label>
+      <label>CSV 파일
+        <input id="csvFile" type="file" accept=".csv,text/csv">
+      </label>
+    </div>
+    <label>또는 표 붙여넣기
+      <textarea id="pasteArea" rows="8" placeholder="이름,훈련조,5000m기록,VDOT&#10;홍길동,1조,20:15,49.0"></textarea>
+    </label>
+    <div class="toolbar">
+      <button id="previewImport">미리보기</button>
+      <button id="saveImport" disabled>검토 후 저장</button>
+      <button id="clearImport" class="secondary">초기화</button>
+    </div>
+    <div id="importMsg" class="status" role="status"></div>
+    <div class="table-wrap"><table id="previewTable"></table></div>
+  </div>
+  <div class="panel">
+    <h2>사진/이미지 입력</h2>
+    <p class="hint">결과표 이미지를 AI가 읽고 이름·조·기록을 자동 매칭하는 기능은 Supabase 연동 버전에서 추가합니다. 자동 저장 전 반드시 검토 화면을 거치게 설계합니다.</p>
+    <button disabled title="2차 버전에서 지원">이미지 자동 인식 — 2차 버전</button>
+  </div>
+</section>
+</main>
+
+<footer>데이터는 이 기기 브라우저에 우선 저장됩니다. Supabase 연결 전에는 다른 기기와 자동 동기화되지 않습니다.</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
