@@ -1,3 +1,6 @@
+const SUPABASE_URL="https://qrhkrjtjhybtebsvsauu.supabase.co";
+const SUPABASE_KEY="sb_publishable_H3c56Is1UjvcC0iAHe_jxw_nx-_AsFR";
+const SUPABASE_TABLE="nirc_5000m_tt";
 const STORAGE_KEY="nirc5000_v1";
 let deferredPrompt=null;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -88,6 +91,30 @@ function savePreview(){const d=$("#importDate").value;if(!d){$("#importMsg").tex
 function exportCsv(){
  const d=$("#monthSelect").value, rows=data[d]||[];const lines=[["순위","이름","훈련조","5000m","km페이스","400m","VDOT"].join(",")].concat(rows.map((r,i)=>[i+1,r.name,r.group,r.time,pace5k(r.time),lap400(r.time),r.vdot??""].join(",")));const blob=new Blob(["\ufeff"+lines.join("\n")],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`NIRC_5000m_${d}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
+function secToTimeString(sec){
+ sec=Number(sec);
+ if(!Number.isFinite(sec)||sec<=0)return null;
+ return `${Math.floor(sec/60)}:${String(Math.round(sec)%60).padStart(2,"0")}`;
+}
+async function loadFromSupabase(){
+ try{
+   const url=`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?select=test_date,name,training_group,time_seconds,vdot&order=test_date.asc,time_seconds.asc`;
+   const res=await fetch(url,{headers:{apikey:SUPABASE_KEY}});
+   if(!res.ok) throw new Error(`Supabase ${res.status}`);
+   const rows=await res.json();
+   if(!Array.isArray(rows)||rows.length===0)return false;
+   const next={};
+   for(const r of rows){
+     const t=secToTimeString(r.time_seconds);
+     if(!r.test_date||!r.name||!t) continue;
+     if(!next[r.test_date]) next[r.test_date]=[];
+     next[r.test_date].push({rank:0,name:r.name,group:r.training_group||"",time:t,vdot:r.vdot==null?null:Number(r.vdot)});
+   }
+   for(const d of Object.keys(next)){next[d].sort((a,b)=>toSec(a.time)-toSec(b.time));next[d].forEach((r,i)=>r.rank=i+1);}
+   if(Object.keys(next).length){data=next;localStorage.setItem(STORAGE_KEY,JSON.stringify(data));return true;}
+   return false;
+ }catch(err){console.warn("Supabase load failed; using local data.",err);return false;}
+}
 function refreshAll(){renderDashboard();renderMonthly();renderAthleteSelect();drawAthlete()}
 $("#dashMonth").addEventListener("change",e=>renderDashTable(e.target.value));
 $("#monthSelect").addEventListener("change",renderMonthlyTable);$("#searchMonthly").addEventListener("input",renderMonthlyTable);$("#athleteSelect").addEventListener("change",drawAthlete);$("#exportCsv").addEventListener("click",exportCsv);
@@ -97,4 +124,5 @@ $("#csvFile").addEventListener("change",async e=>{const f=e.target.files[0];if(!
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("#installBtn").hidden=false});
 $("#installBtn").addEventListener("click",async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("#installBtn").hidden=true});
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
-initTabs();refreshAll();
+initTabs();
+(async()=>{await loadFromSupabase();refreshAll();})();
