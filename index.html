@@ -1,150 +1,151 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0f172a">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="styles.css">
-<title>NIRC 5000m TT 관리</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#172033">
+  <title>NIRC 5000m TT 관리</title>
+  <link rel="icon" href="./icon.png">
+  <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-<header>
-  <div>
-    <h1>NIRC 5000m TT 관리</h1>
-    <p>월례 5000m 타임트라이얼 기록 · PB · 향상도 · 개인 추이</p>
-  </div>
-  <button id="installBtn" class="secondary" hidden>앱 설치</button>
-</header>
+  <header class="app-header">
+    <div>
+      <h1>NIRC 5000m TT 관리</h1>
+      <p>월례 5000m 기록 · PB · 향상도 · 개인 추이</p>
+    </div>
+  </header>
 
-<nav class="tabs" aria-label="주요 메뉴">
-  <button data-tab="dashboard" class="active">대시보드</button>
-  <button data-tab="monthly">월별 기록</button>
-  <button data-tab="athletes">개인 분석</button>
-  <button data-tab="import">기록 가져오기</button>
-</nav>
+  <div id="portalStatus" class="portal-status" role="status" aria-live="polite">포털 공용 데이터를 확인하는 중입니다.</div>
 
-<main>
-<section id="dashboard" class="tab active">
-  <div class="cards" id="summaryCards"></div>
-  <div class="panel">
-    <div class="panel-head">
-      <h2>8월 향상도 TOP</h2>
-      <span class="hint">7월 대비 동일 선수</span>
-    </div>
-    <div id="improvementList"></div>
-  </div>
-  <div class="panel">
-    <div class="panel-head">
-      <h2>이번 달 PB 갱신자</h2>
-      <span class="hint">이전 모든 월례 5000m 기록과 비교</span>
-    </div>
-    <div id="pbRenewList"></div>
-  </div>
-  <div class="panel">
-    <div class="panel-head">
-      <h2>PB / 최근 기록</h2>
-      <select id="dashMonth"></select>
-    </div>
-    <div class="table-wrap"><table id="dashTable"></table></div>
-  </div>
-</section>
+  <nav class="tabs" aria-label="주요 메뉴">
+    <button type="button" data-tab="dashboard" class="active">대시보드</button>
+    <button type="button" data-tab="monthly">월별 기록</button>
+    <button type="button" data-tab="athletes">개인 분석</button>
+    <button type="button" data-tab="import">기록 입력</button>
+  </nav>
 
-<section id="monthly" class="tab">
-  <div class="panel">
-    <div class="toolbar">
-      <label>측정일 <select id="monthSelect"></select></label>
-      <input id="searchMonthly" type="search" placeholder="이름 검색">
-      <button id="exportCsv" class="secondary">CSV 내보내기</button>
-    </div>
-    <div class="table-wrap"><table id="monthlyTable"></table></div>
-  </div>
-</section>
+  <main>
+    <section id="dashboard" class="tab active">
+      <div class="cards" id="summaryCards"></div>
 
-<section id="athletes" class="tab">
-  <div class="panel">
-    <div class="toolbar">
-      <label>선수 <select id="athleteSelect"></select></label>
-    </div>
-    <div id="athleteSummary"></div>
-    <div class="chart-panel">
-      <canvas id="trendChart" width="900" height="380" aria-label="개인 기록 변화 그래프"></canvas>
-    </div>
-    <div class="table-wrap"><table id="athleteTable"></table></div>
-  </div>
-</section>
-
-<section id="import" class="tab">
-  <div class="panel">
-    <h2>기록 가져오기</h2>
-    <p class="hint">현재 1차 버전은 CSV/붙여넣기 입력을 지원합니다. 이미지 자동 인식은 다음 버전에서 연결합니다.</p>
-    <div class="grid2">
-      <label>측정일
-        <input id="importDate" type="date" value="2026-09-02">
-      </label>
-      <label>CSV 파일
-        <input id="csvFile" type="file" accept=".csv,text/csv">
-      </label>
-    </div>
-    <label>또는 표 붙여넣기
-      <textarea id="pasteArea" rows="8" placeholder="이름,훈련조,5000m기록,VDOT&#10;홍길동,1조,20:15,49.0"></textarea>
-    </label>
-    <div class="toolbar">
-      <button id="previewImport">미리보기</button>
-      <button id="saveImport" disabled>검토 후 저장</button>
-      <button id="clearImport" class="secondary">초기화</button>
-    </div>
-    <div id="importMsg" class="status" role="status"></div>
-    <div class="table-wrap"><table id="previewTable"></table></div>
-  </div>
-  <div class="panel">
-    <div class="panel-head">
-      <div>
-        <h2>사진/이미지 입력</h2>
-        <p class="hint">결과표 이미지를 선택하면 박스 안에 미리보기로 불러옵니다. 글자 인식 후 반드시 기록을 검토하세요.</p>
+      <div class="panel">
+        <div class="panel-head">
+          <h2 id="improvementTitle">최근 향상도 TOP</h2>
+          <span class="hint">직전 참가 기록과 비교</span>
+        </div>
+        <div id="improvementList"></div>
       </div>
-    </div>
 
-    <label class="image-drop" id="imageDrop">
-      <input id="resultImage" type="file" accept="image/*" hidden>
-      <div id="imageEmpty">
-        <div class="image-icon">🖼️</div>
-        <strong>결과표 사진 불러오기</strong>
-        <span>갤러리 또는 파일에서 이미지 선택</span>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>이번 측정 PB 갱신자</h2>
+          <span class="hint">이전 모든 5000m 기록과 비교</span>
+        </div>
+        <div id="pbRenewList"></div>
       </div>
-      <img id="imagePreview" alt="선택한 결과표 미리보기" hidden>
-    </label>
 
-    <div id="imageInfo" class="image-info" hidden></div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>기록표</h2>
+          <label class="inline-label">측정일 <select id="dashMonth"></select></label>
+        </div>
+        <div class="table-wrap"><table id="dashTable"></table></div>
+      </div>
+    </section>
 
-    <div class="toolbar image-actions">
-      <button id="chooseImage" type="button">사진 선택</button>
-      <button id="runOcr" type="button" class="secondary" disabled>이미지 글자 읽기</button>
-      <button id="removeImage" type="button" class="secondary" disabled>사진 지우기</button>
-    </div>
+    <section id="monthly" class="tab">
+      <div class="panel">
+        <div class="toolbar">
+          <label>측정일 <select id="monthSelect"></select></label>
+          <input id="searchMonthly" type="search" placeholder="이름 검색" autocomplete="off">
+          <button id="exportCsv" type="button" class="secondary">CSV 내보내기</button>
+        </div>
+        <div class="table-wrap"><table id="monthlyTable"></table></div>
+      </div>
+    </section>
 
-    <div class="ocr-progress" id="ocrProgress" hidden>
-      <div class="ocr-bar"><span id="ocrBar"></span></div>
-      <div id="ocrStatus">준비 중...</div>
-    </div>
+    <section id="athletes" class="tab">
+      <div class="panel">
+        <div class="toolbar">
+          <label>선수 <select id="athleteSelect"></select></label>
+        </div>
+        <div id="athleteSummary"></div>
+        <div class="chart-panel">
+          <canvas id="trendChart" width="900" height="380" aria-label="개인 기록 변화 그래프"></canvas>
+        </div>
+        <div class="table-wrap"><table id="athleteTable"></table></div>
+      </div>
+    </section>
 
-    <label id="ocrTextWrap" hidden>이미지에서 읽은 내용
-      <textarea id="ocrText" rows="10" placeholder="이미지에서 읽은 글자가 여기에 표시됩니다."></textarea>
-    </label>
+    <section id="import" class="tab">
+      <div class="panel">
+        <h2>기록 입력 · 저장</h2>
+        <p class="hint">감독님 로그인 상태에서 저장하면 회원 공용 데이터로 반영됩니다. 일반 회원은 조회할 수 있지만 저장 권한이 없을 수 있습니다.</p>
+        <div class="grid2">
+          <label>측정일
+            <input id="importDate" type="date" value="2026-09-02">
+          </label>
+          <label>CSV 파일
+            <input id="csvFile" type="file" accept=".csv,text/csv">
+          </label>
+        </div>
+        <label>또는 표 붙여넣기
+          <textarea id="pasteArea" rows="8" placeholder="이름,훈련조,5000m기록,VDOT&#10;홍길동,1조,20:15,49.0"></textarea>
+        </label>
+        <div class="toolbar">
+          <button id="previewImport" type="button">미리보기</button>
+          <button id="saveImport" type="button" disabled>검토 후 공용 저장</button>
+          <button id="clearImport" type="button" class="secondary">초기화</button>
+        </div>
+        <div id="importMsg" class="status" role="status" aria-live="polite"></div>
+        <div class="table-wrap"><table id="previewTable"></table></div>
+      </div>
 
-    <div class="toolbar" id="ocrActions" hidden>
-      <button id="ocrToPaste" type="button">기록 입력칸으로 가져오기</button>
-    </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>사진/이미지 입력</h2>
+            <p class="hint">결과표 이미지를 박스 안에 불러와 확인할 수 있습니다. 인터넷이 가능하면 글자 인식도 시도할 수 있습니다.</p>
+          </div>
+        </div>
 
-    <p class="hint image-note">※ 사진 글자 인식은 기기와 이미지 품질에 따라 오차가 있을 수 있습니다. 자동 저장하지 않고 미리보기·수정 후 저장하도록 되어 있습니다.</p>
-  </div>
-</section>
-</main>
+        <label class="image-drop" id="imageDrop">
+          <input id="resultImage" type="file" accept="image/*" hidden>
+          <div id="imageEmpty">
+            <div class="image-icon" aria-hidden="true">🖼️</div>
+            <strong>결과표 사진 불러오기</strong>
+            <span>휴대폰 갤러리 또는 파일에서 선택</span>
+          </div>
+          <img id="imagePreview" alt="선택한 결과표 미리보기" hidden>
+        </label>
 
-<footer>공용 기록은 Supabase에서 불러옵니다. 이미지 원본은 현재 기기에만 미리보기로 표시되며 자동 저장되지 않습니다.</footer>
+        <div id="imageInfo" class="image-info" hidden></div>
+        <div class="toolbar image-actions">
+          <button id="chooseImage" type="button">사진 선택</button>
+          <button id="runOcr" type="button" class="secondary" disabled>이미지 글자 읽기</button>
+          <button id="removeImage" type="button" class="secondary" disabled>사진 지우기</button>
+        </div>
 
-<script src="data.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="app.js"></script>
+        <div class="ocr-progress" id="ocrProgress" hidden>
+          <div class="ocr-bar"><span id="ocrBar"></span></div>
+          <div id="ocrStatus">준비 중...</div>
+        </div>
+
+        <label id="ocrTextWrap" hidden>이미지에서 읽은 내용
+          <textarea id="ocrText" rows="10" placeholder="인식한 글자가 여기에 표시됩니다. 틀린 부분은 직접 수정하세요."></textarea>
+        </label>
+        <div class="toolbar" id="ocrActions" hidden>
+          <button id="ocrToPaste" type="button">기록 입력칸으로 가져오기</button>
+        </div>
+        <p class="hint image-note">이미지 인식이 안 되거나 인터넷 연결이 불안정해도 CSV·붙여넣기 수동 입력은 계속 사용할 수 있습니다. 이미지 원본 자체는 공용 데이터에 저장하지 않습니다.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>NIRC 포털 슬롯용 · 회원 공용 기록</footer>
+
+  <script src="./data.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>

@@ -1,0 +1,6 @@
+{
+  "title": "NIRC 5000m TT 관리",
+  "description": "회원 공용 5000m TT 기록, PB, 향상도와 개인 기록 추이를 확인합니다.",
+  "audience": "member_shared",
+  "enabled": true
+}
