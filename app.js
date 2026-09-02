@@ -179,55 +179,47 @@ function drawChart(h){
 function refreshAll(){renderDashboard();renderMonthly();renderAthleteSelect();drawAthlete();}
 
 function parseText(text){
-  const lines=String(text||'').trim().split(/\r?\n/).filter(Boolean),out=[];
+  const lines=String(text||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean),out=[];
   for(const rawLine of lines){
     let line=rawLine.trim();
     if(!line)continue;
     if(line.includes('이름') || line.includes('5000m기록'))continue;
+    if(/미참/.test(line))continue;
 
-    // 1) 기존 CSV/탭 형식은 그대로 지원
+    // CSV/탭 형식
     if(/[\t,]/.test(line)){
       const cols=line.split(/[\t,]/).map(s=>s.trim()).filter(Boolean);
-      let [name,group,time,vdot]=cols;
-      const validTimes=cols.filter(c=>toSec(c)!=null);
-      if(validTimes.length){
-        // 시간이 여러 개면 가장 뒤의 시간을 현재(9월) 기록으로 사용
-        time=validTimes[validTimes.length-1];
-        const ti=cols.lastIndexOf(time);
-        name=(cols[0]||'').replace(/^[^가-힣A-Za-z]*\d*\.?\s*/,'').trim();
-        if(ti>1)group=cols[1];
-        else group='';
-        vdot='';
+      const times=[];
+      cols.forEach((c,i)=>{ const m=c.match(/\d{1,2}:\d{2}/g); if(m) m.forEach(t=>times.push({t,i})); });
+      if(times.length){
+        const last=times[times.length-1];
+        const name=(cols[0]||'').replace(/^[^가-힣A-Za-z]*\d*\.?\s*/,'').trim();
+        const group=last.i>1?(cols[1]||''):'';
+        const row=normalizeRow({name,group,time:last.t,vdot:''});
+        if(row){out.push(row);continue;}
       }
+      const [name,group,time,vdot]=cols;
       const row=normalizeRow({name,group,time,vdot});
       if(row){out.push(row);continue;}
     }
 
-    // 2) 카톡/문자 복사 형식 지원: ✅9.이창환 22:12 22:17
-    // 이모지/체크표시와 앞 순번 제거
+    // 카톡/문자 형식: 17.남아름 21:47 21:14PB상
     line=line
       .replace(/[✅☑️✔️🔑⭐★◆◇●○▪︎■□👉➡️]/gu,' ')
       .replace(/^\s*\d+\s*[.)、-]?\s*/,'')
       .replace(/\s+/g,' ')
       .trim();
 
-    const timeRe=/(?:^|\s)(\d{1,2}:\d{2})(?=\s|$)/g;
-    const matches=[...line.matchAll(timeRe)];
+    // 뒤에 PB상/참가상 등이 붙어 있어도 시간 자체는 모두 인식
+    const matches=[...line.matchAll(/\d{1,2}:\d{2}/g)];
     if(!matches.length)continue;
-
-    // 핵심 규칙: 시간이 2개 이상이면 맨 뒤 시간을 이번 기록으로 사용
-    const time=matches[matches.length-1][1];
-    const firstTimeStart=matches[0].index + (matches[0][0].startsWith(' ')?1:0);
-    let prefix=line.slice(0,firstTimeStart).trim();
-
-    // 이름 앞에 남은 순번/기호 제거
+    const time=matches[matches.length-1][0]; // 마지막 시간이 현재(9월) 기록
+    let prefix=line.slice(0,matches[0].index).trim();
     prefix=prefix.replace(/^\s*\d+\s*[.)、-]?\s*/,'').trim();
 
-    // 이름 뒤에 조가 있으면 분리. 없으면 빈 값.
     let group='';
     const groupMatch=prefix.match(/\s+(S조|\d+조|여성조|일반조|회원조|게스트|none조)$/i);
     if(groupMatch){group=groupMatch[1];prefix=prefix.slice(0,groupMatch.index).trim();}
-
     const name=prefix.replace(/^[^가-힣A-Za-z]+/,'').trim();
     const row=normalizeRow({name,group,time,vdot:''});
     if(row)out.push(row);
@@ -286,7 +278,14 @@ $('#monthSelect').addEventListener('change',renderMonthlyTable);
 $('#searchMonthly').addEventListener('input',renderMonthlyTable);
 $('#athleteSelect').addEventListener('change',drawAthlete);
 $('#exportCsv').addEventListener('click',exportCsv);
-$('#previewImport').addEventListener('click',()=>{previewRows=parseText($('#pasteArea').value);showPreview();});
+function runImportPreview(){previewRows=parseText($('#pasteArea').value);showPreview();}
+$('#previewImport').addEventListener('click',runImportPreview);
+$('#pasteArea').addEventListener('input',()=>{
+  const raw=$('#pasteArea').value.trim();
+  if(!raw){previewRows=[];emptyTable($('#previewTable'),6,'입력 내용을 미리보기 하면 여기에 표시됩니다.');$('#saveImport').disabled=true;setImportMsg('');return;}
+  previewRows=parseText(raw);
+  showPreview();
+});
 $('#saveImport').addEventListener('click',savePreview);
 $('#clearImport').addEventListener('click',()=>{$('#pasteArea').value='';$('#csvFile').value='';previewRows=[];emptyTable($('#previewTable'),6,'입력 내용을 미리보기 하면 여기에 표시됩니다.');$('#saveImport').disabled=true;setImportMsg('');});
 $('#csvFile').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{$('#pasteArea').value=await f.text();previewRows=parseText($('#pasteArea').value);showPreview();}catch(err){setImportMsg('CSV 파일을 읽지 못했습니다.','error');}});
