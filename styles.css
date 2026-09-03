@@ -51,3 +51,25 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
   #imagePreview{max-height:420px}
   .image-actions button{flex:1 1 30%;min-width:92px}
 }
+
+.modal-backdrop{
+ position:fixed;inset:0;background:rgba(15,23,42,.58);z-index:1000;
+ display:flex;align-items:center;justify-content:center;padding:18px;
+}
+.modal-backdrop[hidden]{display:none}
+.modal-card{
+ width:min(560px,100%);background:#fff;border-radius:20px;padding:20px;
+ box-shadow:0 20px 60px rgba(0,0,0,.25);max-height:90%;overflow:auto;
+}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.modal-head h2{margin:0}
+.icon-btn{width:44px;height:44px;padding:0;border-radius:12px}
+.modal-actions{margin-top:14px}
+.mini-btn{padding:7px 10px;min-height:34px;font-size:13px;white-space:nowrap}
+#addMonthlyRecord{white-space:nowrap}
+@media(max-width:600px){
+ .modal-card{padding:16px}
+ .modal-card .grid2{grid-template-columns:1fr}
+ #monthly .toolbar{align-items:stretch}
+ #monthly .toolbar label,#monthly .toolbar input{flex:1 1 100%}
+}

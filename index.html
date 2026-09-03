@@ -11,7 +11,7 @@
 <body>
 <header>
   <div>
-    <h1>NIRC 5000m TT 관리 <small style="font-size:12px;opacity:.75">GitHub v5.1</small></h1>
+    <h1>NIRC 5000m TT 관리 <small style="font-size:12px;opacity:.75">GitHub v5.2</small></h1>
     <p>월례 5000m 타임트라이얼 기록 · PB · 향상도 · 개인 추이</p>
   </div>
   <button id="installBtn" class="secondary" hidden>앱 설치</button>
@@ -29,8 +29,8 @@
   <div class="cards" id="summaryCards"></div>
   <div class="panel">
     <div class="panel-head">
-      <h2>8월 향상도 TOP</h2>
-      <span class="hint">7월 대비 동일 선수</span>
+      <h2 id="improvementTitle">향상도 TOP</h2>
+      <span id="improvementHint" class="hint">직전 측정 대비 동일 선수</span>
     </div>
     <div id="improvementList"></div>
   </div>
@@ -55,6 +55,7 @@
     <div class="toolbar">
       <label>측정일 <select id="monthSelect"></select></label>
       <input id="searchMonthly" type="search" placeholder="이름 검색">
+      <button id="addMonthlyRecord">+ 기록 추가</button>
       <button id="exportCsv" class="secondary">CSV 내보내기</button>
     </div>
     <div class="table-wrap"><table id="monthlyTable"></table></div>
@@ -77,7 +78,7 @@
 <section id="import" class="tab">
   <div class="panel">
     <h2>기록 가져오기</h2>
-    <p class="hint">GitHub v5.1 · 카톡/문자 명단을 그대로 붙여넣을 수 있습니다. 시간이 2개면 맨 뒤 기록을 이번 측정 기록으로 사용합니다.</p>
+    <p class="hint">GitHub v5.2 · 카톡/문자 명단을 그대로 붙여넣을 수 있습니다. 시간이 2개면 맨 뒤 기록을 이번 측정 기록으로 사용합니다.</p>
     <div class="grid2">
       <label>측정일
         <input id="importDate" type="date" value="2026-09-02">
@@ -141,10 +142,40 @@
 </section>
 </main>
 
+<div id="recordModal" class="modal-backdrop" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="recordModalTitle">
+    <div class="modal-head">
+      <h2 id="recordModalTitle">기록 추가</h2>
+      <button id="closeRecordModal" type="button" class="icon-btn" aria-label="닫기">✕</button>
+    </div>
+    <p id="recordModalDate" class="hint"></p>
+    <div class="grid2">
+      <label>이름
+        <input id="recordName" type="text" autocomplete="off" placeholder="예: 강동우">
+      </label>
+      <label>훈련조
+        <input id="recordGroup" type="text" autocomplete="off" placeholder="예: 2조">
+      </label>
+      <label>5000m 기록
+        <input id="recordTime" type="text" inputmode="numeric" placeholder="예: 21:55">
+      </label>
+      <label>VDOT
+        <input id="recordVdot" type="number" step="0.1" inputmode="decimal" placeholder="선택">
+      </label>
+    </div>
+    <div id="recordModalMsg" class="status" role="status"></div>
+    <div class="toolbar modal-actions">
+      <button id="saveMonthlyRecord" type="button">저장</button>
+      <button id="cancelMonthlyRecord" type="button" class="secondary">취소</button>
+    </div>
+  </div>
+</div>
+
+
 <footer>공용 기록은 Supabase에서 불러옵니다. 이미지 원본은 현재 기기에만 미리보기로 표시되며 자동 저장되지 않습니다.</footer>
 
 <script src="data.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="app-v51.js?v=51"></script>
+<script src="app-v52.js?v=52"></script>
 </body>
 </html>
